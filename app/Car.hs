@@ -1,24 +1,53 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE StandaloneDeriving #-}
 -- |
 -- Module: Car
 --
 -- CAR*.RES resource processing.
-module Car where
+module Car
+    ( Simd(..)
+    , Car(..)
+    , StuntsString
+    , Point3D
+    , Point2D16
+    , Point2D8
+    , resourcesToCar
+    , readCar
+    , ppdCarRes
+    ) where
 
 import Resources
 
-import qualified Data.ByteString.Char8 as B8
-import Data.Vector (Vector)
-import qualified Data.Vector as V
+import Data.ByteString.Lazy (ByteString)
+import qualified Data.ByteString.Lazy as B
+import Data.Text (Text)
+import Data.Text.Encoding (decodeASCII)
+import Data.IntMap.Strict (IntMap)
+import qualified Data.IntMap as IM
 import Data.Binary
 import Data.Binary.Get
 import Data.Int
 import Control.Monad (replicateM)
 import Control.Applicative (liftA2, liftA3)
 
--- | Raw C String from Stunts.
-type StuntsString = B8.ByteString
+import GHC.Generics (Generic)
+import Data.Portray (Portray)
+import Data.Portray.Diff (Diff)
+import Prettyprinter (Pretty)
+import Data.Portray.Prettyprinter (WrappedPortray(..), ppd)
+import Data.Wrapped (Wrapped(..))
+
+-- | String from Stunts.
+--
+-- Using Data.ByteString.Char8 would have been more straightforward,
+-- but it would require orphan instances of Portray and Diff
+type StuntsString = Text
+
+makeStuntsString :: ByteString -> Text
+makeStuntsString = decodeASCII . B.toStrict
 
 -- TODO: Ideally, coordinates should be strict tuples.
 -- Forgoing that for now, for the sake of expediency.
@@ -41,6 +70,15 @@ type Point2D8 = (Word8, Word8)
 getPoint2D8 :: Get Point2D8
 getPoint2D8 = liftA2 (,) getWord8 getWord8
 
+-- | Create an IntMap from a list of keys and a list of values.
+--
+-- IntMaps are convenient due to easier displaying, already having
+-- Portray and Diff instances, and offering choice of indexing. As
+-- far as type accuracy goes, though, the ideal choice would be fixed
+-- length vectors.
+makeIntMap :: [Int] -> [a] -> IntMap a
+makeIntMap ks = IM.fromList . zip ks
+
 -- | Representation of the simd resource.
 data Simd = Simd
     { numGears :: !Word8
@@ -52,16 +90,16 @@ data Simd = Simd
     , upshiftRpm :: !Word16
     , maximumRpm :: !Word16
     , yellowWord :: !Word16
-    , gearRatios :: !(Vector Word16)
+    , gearRatios :: !(IntMap Word16)
     , knobUnknown :: !Word16
     , knobCentre :: !Word16
-    , knobPositions :: !(Vector Point2D16)
+    , knobPositions :: !(IntMap Point2D16)
     , aeroResistance :: !Word16
     , idleRpmTorque :: !Word8
-    , torqueCurve :: !(Vector Word8)
+    , torqueCurve :: !(IntMap Word8)
     , blueWord :: !Word16
     , baseGrip :: !Word16
-    , redWordsA :: !(Vector Word16)
+    , redWordsA :: !(IntMap Word16)
     , redWordNeedleColour :: !Word16
     , redWordsB :: !(Word16, Word16)
     , airGrip :: !Word16
@@ -69,23 +107,25 @@ data Simd = Simd
     , dirtGrip :: !Word16
     , iceGrip :: !Word16
     , grassGrip :: !Word16
-    , orangeWords :: !(Vector Word16)
+    , orangeWords :: !(IntMap Word16)
     , tracksideHalfWidth :: !Word16
     , tracksideHalfHeight :: !Word16
     , tracksideHalfLength :: !Word16
     , tracksideCutoffRadius :: !Word16
     , insideCarHeight :: !Word16
-    , wheelCoords :: !(Vector Point3D)
+    , wheelCoords :: !(IntMap Point3D)
     , steeringDotCentre :: !(Word8, Word8)
-    , steeringDotArc :: !(Vector Point2D8)
+    , steeringDotArc :: !(IntMap Point2D8)
     , speedometerCentre :: !Point2D16
     , speedometerNumPositions :: !Word16
-    , speedometerArc :: !(Vector Point2D8)
+    , speedometerArc :: !(IntMap Point2D8)
     , tachometerCentre :: !Point2D16
     , tachometerNumPositions :: !Word16
-    , tachometerArc :: !(Vector Point2D8)
+    , tachometerArc :: !(IntMap Point2D8)
     }
-    deriving (Eq, Show)
+    deriving (Eq, Show, Generic)
+    deriving (Portray, Diff) via Wrapped Generic Simd
+    deriving Pretty via WrappedPortray Simd
 
 getSimd :: Get Simd
 getSimd = do
@@ -98,16 +138,16 @@ getSimd = do
     upshiftRpm <- getWord16le
     maximumRpm <- getWord16le
     yellowWord <- getWord16le
-    gearRatios <- V.fromList <$> replicateM 6 getWord16le
+    gearRatios <- makeIntMap [1..] <$> replicateM 6 getWord16le
     knobUnknown <- getWord16le
     knobCentre <- getWord16le
-    knobPositions <- V.fromList <$> replicateM 6 getPoint2D16
+    knobPositions <- makeIntMap [1..] <$> replicateM 6 getPoint2D16
     aeroResistance <- getWord16le
     idleRpmTorque <- getWord8
-    torqueCurve <- V.fromList <$> replicateM 103 getWord8
+    torqueCurve <- makeIntMap [0, 128..] <$> replicateM 103 getWord8
     blueWord <- getWord16le
     baseGrip <- getWord16le
-    redWordsA <- V.fromList <$> replicateM 4 getWord16le
+    redWordsA <- makeIntMap [1..] <$> replicateM 4 getWord16le
     redWordNeedleColour <- getWord16le
     redWordsB <- liftA2 (,) getWord16le getWord16le
     airGrip <- getWord16le
@@ -115,21 +155,21 @@ getSimd = do
     dirtGrip <- getWord16le
     iceGrip <- getWord16le
     grassGrip <- getWord16le
-    orangeWords <- V.fromList <$> replicateM 5 getWord16le
+    orangeWords <- makeIntMap [1..] <$> replicateM 5 getWord16le
     tracksideHalfWidth <- getWord16le
     tracksideHalfHeight <- getWord16le
     tracksideHalfLength <- getWord16le
     tracksideCutoffRadius <- getWord16le
     insideCarHeight <- getWord16le
-    wheelCoords <- V.fromList <$> replicateM 4 getPoint3D
+    wheelCoords <- makeIntMap [1..] <$> replicateM 4 getPoint3D
     steeringDotCentre <- getPoint2D8
-    steeringDotArc <- V.fromList <$> replicateM 30 getPoint2D8
+    steeringDotArc <- makeIntMap [1..] <$> replicateM 30 getPoint2D8
     speedometerCentre <- getPoint2D16
     speedometerNumPositions <- getWord16le
-    speedometerArc <- V.fromList <$> replicateM 104 getPoint2D8
+    speedometerArc <- makeIntMap [0, 25..] <$> replicateM 104 getPoint2D8
     tachometerCentre <- getPoint2D16
     tachometerNumPositions <- getWord16le
-    tachometerArc <- V.fromList <$> replicateM 128 getPoint2D8
+    tachometerArc <- makeIntMap [0, 128..] <$> replicateM 128 getPoint2D8
     return $! Simd {..}
 
 -- | Strongly typed representation of CAR*.RES.
@@ -139,15 +179,29 @@ data Car = Car
     , gsna :: !StuntsString
     , simd :: !Simd
     }
-    deriving (Eq, Show)
+    deriving (Eq, Show, Generic)
+    deriving (Portray, Diff) via Wrapped Generic Car
+    deriving Pretty via WrappedPortray Car
 
 -- | Makes a car out of untyped resources.
 resourcesToCar :: Resources -> Car
 resourcesToCar ress = Car {..}
     where
     -- TODO: No protection against missing resources.
-    edes = B8.toStrict (ress ! "edes")
-    gnam = B8.toStrict (ress ! "gnam")
-    gsna = B8.toStrict (ress ! "gsna")
+    edes = makeStuntsString (ress ! "edes")
+    gnam = makeStuntsString (ress ! "gnam")
+    gsna = makeStuntsString (ress ! "gsna")
     simd = runGet getSimd (ress ! "simd")
 
+-- | Makes a car by reading a CAR*.RES file.
+readCar :: FilePath -> IO Car
+readCar path = do
+    bin <- B.readFile path
+    return $! resourcesToCar (runGet getResources bin)
+
+-- | Pretty-print to console the differences between CAR*.RES files.
+ppdCarRes :: FilePath -> FilePath -> IO ()
+ppdCarRes path1 path2 = do
+    car1 <- readCar path1
+    car2 <- readCar path2
+    ppd car1 car2

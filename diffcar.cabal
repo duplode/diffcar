@@ -27,5 +27,11 @@ executable diffcar
                     , bytestring
                     , binary
                     , vector
+                    , portray
+                    , portray-diff
+                    , portray-prettyprinter
+                    , prettyprinter
+                    , wrapped
+                    , text
     hs-source-dirs:   app
     default-language: Haskell2010
