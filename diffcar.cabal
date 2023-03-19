@@ -19,8 +19,12 @@ common warnings
 executable diffcar
     import:           warnings
     main-is:          Main.hs
-    -- other-modules:
+    other-modules:    Resources
+                    , Car
     -- other-extensions:
     build-depends:    base ^>=4.17.0.0
+                    , containers
+                    , bytestring
+                    , binary
     hs-source-dirs:   app
     default-language: Haskell2010
