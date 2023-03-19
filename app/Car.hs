@@ -25,6 +25,7 @@ import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as B
 import Data.Text (Text)
 import Data.Text.Encoding (decodeASCII)
+import qualified Data.Text.IO as T (putStrLn)
 import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap as IM
 import Data.Binary
@@ -37,7 +38,7 @@ import GHC.Generics (Generic)
 import Data.Portray (Portray)
 import Data.Portray.Diff (Diff)
 import Prettyprinter (Pretty)
-import Data.Portray.Prettyprinter (WrappedPortray(..), ppd)
+import Data.Portray.Prettyprinter (WrappedPortray(..), ppd, showDiff)
 import Data.Wrapped (Wrapped(..))
 
 -- | String from Stunts.
@@ -200,8 +201,10 @@ readCar path = do
     return $! resourcesToCar (runGet getResources bin)
 
 -- | Pretty-print to console the differences between CAR*.RES files.
-ppdCarRes :: FilePath -> FilePath -> IO ()
-ppdCarRes path1 path2 = do
+ppdCarRes :: Bool -> FilePath -> FilePath -> IO ()
+ppdCarRes plain path1 path2 = do
     car1 <- readCar path1
     car2 <- readCar path2
-    ppd car1 car2
+    if plain
+        then T.putStrLn (showDiff car1 car2)
+        else ppd car1 car2
