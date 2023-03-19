@@ -26,5 +26,6 @@ executable diffcar
                     , containers
                     , bytestring
                     , binary
+                    , vector
     hs-source-dirs:   app
     default-language: Haskell2010
