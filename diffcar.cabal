@@ -26,7 +26,6 @@ executable diffcar
                     , containers
                     , bytestring
                     , binary
-                    , vector
                     , portray
                     , portray-diff
                     , portray-prettyprinter
