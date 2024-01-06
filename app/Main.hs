@@ -9,6 +9,7 @@ import qualified Data.Text.IO as T (putStrLn)
 import qualified Data.Text.Lazy as TL (toStrict)
 import Control.Monad (when, unless)
 import Data.Maybe (isNothing)
+import qualified Control.Selective as Sel
 import qualified Data.Portray.Diff as Portray
 import qualified Data.Portray.Prettyprinter as Portray
 
@@ -58,21 +59,26 @@ opts = Opts.info baseOpts $
 main :: IO ()
 main = do
     options <- Opts.execParser opts
-    let p1 = file1 options
-        p2 = file2 options
-    car1 <- readCar p1
-    car2 <- readCar p2
-    let diffCar = Portray.diff car1 car2
-        headerText  = T.unlines
+    let path1 = file1 options
+        path2 = file2 options
+    let headerText = T.unlines
             [ T.replicate 72 "-"
-            , T.pack p1
-            , T.pack p2
+            , T.pack path1
+            , T.pack path2
             , T.replicate 72 "-"
             ]
         chosenShow = if plain options
             then Portray.basicShowPortrayal
             else TL.toStrict . Portray.prettyShowPortrayalLazy
-    unless (skipEquals options && isNothing diffCar) $ do
-        when (header options) $ T.putStrLn headerText
-        T.putStrLn (maybe "_" chosenShow diffCar)
-        when (header options) $ T.putStrLn ""
+    vCar1 <- readCar path1
+    vCar2 <- readCar path2
+    let vDiffCar = Portray.diff <$> vCar1 <*> vCar2
+    case vDiffCar of
+        Sel.Failure ps -> do
+            when (header options) $ T.putStrLn headerText
+            T.putStrLn $ showMissingPaths ps
+        Sel.Success diffCar ->
+            unless (skipEquals options && isNothing diffCar) $ do
+                when (header options) $ T.putStrLn headerText
+                T.putStrLn (maybe "_" chosenShow diffCar)
+                when (header options) $ T.putStrLn ""

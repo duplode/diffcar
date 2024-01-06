@@ -17,6 +17,7 @@ module Car
     , resourcesToCar
     , readCar
     , ppdCarRes
+    , showMissingPaths
     ) where
 
 import Resources
@@ -24,6 +25,7 @@ import Resources
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as B
 import Data.Text (Text)
+import qualified Data.Text as T (pack, unlines)
 import Data.Text.Encoding (decodeASCII)
 import qualified Data.Text.IO as T (putStrLn)
 import Data.IntMap.Strict (IntMap)
@@ -33,6 +35,11 @@ import Data.Binary.Get
 import Data.Int
 import Control.Monad (replicateM)
 import Control.Applicative (liftA2, liftA3)
+import Control.Selective (Validation(..))
+import Data.Char (toUpper)
+import Data.List (find)
+import System.Directory (getDirectoryContents)
+import System.FilePath (splitFileName, (</>))
 
 import GHC.Generics (Generic)
 import Data.Portray (Portray)
@@ -195,16 +202,32 @@ resourcesToCar ress = Car {..}
     simd = runGet getSimd (ress ! "simd")
 
 -- | Makes a car by reading a CAR*.RES file.
-readCar :: FilePath -> IO Car
+readCar :: FilePath -> IO (Validation [FilePath] Car)
 readCar path = do
-    bin <- B.readFile path
-    return $! resourcesToCar (runGet getResources bin)
+    let (dir, fil) = splitFileName path
+    names <- getDirectoryContents dir
+    mName <- do
+        let uFil = map toUpper fil
+        return $ find ((uFil ==) . map toUpper) names
+    let vName = maybe (Failure [path]) Success mName
+    -- This would be traverse if this Validation had the instance.
+    vBin <- case vName of
+        Failure ps -> return $ Failure ps
+        Success name -> Success <$> B.readFile (dir </> name)
+    return $! (resourcesToCar . runGet getResources) <$> vBin
 
 -- | Pretty-print to console the differences between CAR*.RES files.
 ppdCarRes :: Bool -> FilePath -> FilePath -> IO ()
 ppdCarRes plain path1 path2 = do
-    car1 <- readCar path1
-    car2 <- readCar path2
-    if plain
-        then T.putStrLn (showDiff car1 car2)
-        else ppd car1 car2
+    vCar1 <- readCar path1
+    vCar2 <- readCar path2
+    case liftA2 (,) vCar1 vCar2 of
+        Failure ps -> T.putStrLn $ showMissingPaths ps
+        Success (car1, car2) -> if plain
+            then T.putStrLn (showDiff car1 car2)
+            else ppd car1 car2
+
+-- | Formats a list of missing paths from readCar for display.
+showMissingPaths :: [FilePath] -> Text
+showMissingPaths ps = T.unlines $ "Missing files:" : map T.pack ps
+
