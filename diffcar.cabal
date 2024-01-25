@@ -22,6 +22,7 @@ executable diffcar
     other-modules:    Resources
                     , Car
                     , Single
+                    , Print
     -- other-extensions:
     build-depends:    base ^>=4.17.0.0
                     , containers

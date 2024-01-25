@@ -1,28 +1,18 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Single
     ( subMain
     , Options(..)
     , opts
     ) where
 
-import Car
+import Print
 
 import qualified Options.Applicative as Opts
-import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn)
-import qualified Data.Text.Lazy as TL (toStrict)
-import Control.Monad (when, unless)
-import Data.Maybe (isNothing)
-import qualified Control.Selective as Sel
-import qualified Data.Portray.Diff as Portray
-import qualified Data.Portray.Prettyprinter as Portray
 
 data Options = Options
     { file1 :: FilePath
     , file2 :: FilePath
-    , plain :: Bool
-    , header :: Bool
-    , skipEquals :: Bool
+    , printOpts :: PrintOptions
     }
 
 argFile1 :: Opts.Parser FilePath
@@ -53,7 +43,8 @@ switchSkipEquals = Opts.switch $
 baseOpts :: Opts.Parser Options
 baseOpts = Options
     <$> argFile1 <*> argFile2
-    <*> switchPlain <*> switchHeader <*> switchSkipEquals
+    <*> (PrintOptions
+        <$> switchPlain <*> switchHeader <*> switchSkipEquals)
 
 opts :: Opts.ParserInfo Options
 opts = Opts.info baseOpts $
@@ -62,26 +53,6 @@ opts = Opts.info baseOpts $
 
 subMain :: Options -> IO ()
 subMain options = do
-    let path1 = file1 options
-        path2 = file2 options
-    let headerText = T.unlines
-            [ T.replicate 72 "-"
-            , T.pack path1
-            , T.pack path2
-            , T.replicate 72 "-"
-            ]
-        chosenShow = if plain options
-            then Portray.basicShowPortrayal
-            else TL.toStrict . Portray.prettyShowPortrayalLazy
-    vCar1 <- readCar path1
-    vCar2 <- readCar path2
-    let vDiffCar = Portray.diff <$> vCar1 <*> vCar2
-    case vDiffCar of
-        Sel.Failure ps -> do
-            when (header options) $ T.putStrLn headerText
-            T.putStrLn $ showMissingPaths ps
-        Sel.Success diffCar ->
-            unless (skipEquals options && isNothing diffCar) $ do
-                when (header options) $ T.putStrLn headerText
-                T.putStrLn (maybe "_" chosenShow diffCar)
-                when (header options) $ T.putStrLn ""
+    output <- filesDiff
+        (printOpts options) (file1 options) (file2 options)
+    T.putStrLn output
