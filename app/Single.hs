@@ -1,5 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Main where
+module Single
+    ( subMain
+    , Options(..)
+    , opts
+    ) where
 
 import Car
 
@@ -56,9 +60,8 @@ opts = Opts.info baseOpts $
     Opts.fullDesc
     <> Opts.progDesc "Compare two CAR*.RES files"
 
-main :: IO ()
-main = do
-    options <- Opts.execParser opts
+subMain :: Options -> IO ()
+subMain options = do
     let path1 = file1 options
         path2 = file2 options
     let headerText = T.unlines

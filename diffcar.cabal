@@ -18,9 +18,10 @@ common warnings
 
 executable diffcar
     import:           warnings
-    main-is:          Main.hs
+    main-is:          OuterMain.hs
     other-modules:    Resources
                     , Car
+                    , Single
     -- other-extensions:
     build-depends:    base ^>=4.17.0.0
                     , containers

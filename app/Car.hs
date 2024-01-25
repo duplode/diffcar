@@ -201,7 +201,8 @@ resourcesToCar ress = Car {..}
     gsna = makeStuntsString (ress ! "gsna")
     simd = runGet getSimd (ress ! "simd")
 
--- | Makes a car by reading a CAR*.RES file.
+-- | Makes a car by reading a CAR*.RES file. Note the file name is
+-- handled in a case-insensitive way.
 readCar :: FilePath -> IO (Validation [FilePath] Car)
 readCar path = do
     let (dir, fil) = splitFileName path
@@ -217,6 +218,7 @@ readCar path = do
     return $! (resourcesToCar . runGet getResources) <$> vBin
 
 -- | Pretty-print to console the differences between CAR*.RES files.
+-- Primarily meant for debugging.
 ppdCarRes :: Bool -> FilePath -> FilePath -> IO ()
 ppdCarRes plain path1 path2 = do
     vCar1 <- readCar path1
