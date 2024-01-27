@@ -38,7 +38,7 @@ import Control.Applicative (liftA2, liftA3)
 import Control.Selective (Validation(..))
 import Data.Char (toUpper)
 import Data.List (find)
-import System.Directory (getDirectoryContents)
+import System.Directory (getDirectoryContents, doesFileExist)
 import System.FilePath (splitFileName, (</>))
 
 import GHC.Generics (Generic)
@@ -201,20 +201,14 @@ resourcesToCar ress = Car {..}
     gsna = makeStuntsString (ress ! "gsna")
     simd = runGet getSimd (ress ! "simd")
 
--- | Makes a car by reading a CAR*.RES file. Note the file name is
--- handled in a case-insensitive way.
+-- | Makes a car by reading a CAR*.RES file.
 readCar :: FilePath -> IO (Validation [FilePath] Car)
 readCar path = do
-    let (dir, fil) = splitFileName path
-    names <- getDirectoryContents dir
-    mName <- do
-        let uFil = map toUpper fil
-        return $ find ((uFil ==) . map toUpper) names
-    let vName = maybe (Failure [path]) Success mName
+    exists <- doesFileExist path
     -- This would be traverse if this Validation had the instance.
-    vBin <- case vName of
-        Failure ps -> return $ Failure ps
-        Success name -> Success <$> B.readFile (dir </> name)
+    vBin <- if exists
+        then Success <$> B.readFile path
+        else return $ Failure [path]
     return $! (resourcesToCar . runGet getResources) <$> vBin
 
 -- | Pretty-print to console the differences between CAR*.RES files.
