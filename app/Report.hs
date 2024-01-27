@@ -8,7 +8,7 @@ import qualified Print
 
 import qualified Options.Applicative as Opts
 import qualified Data.Text.Lazy.Builder as TL
-import qualified Data.Text.Lazy.IO as TL (putStrLn)
+import qualified Data.Text.Lazy.IO as TL (putStrLn, writeFile)
 import System.Directory (getDirectoryContents)
 import System.FilePath (takeExtension, (</>))
 import Data.Char (toUpper)
@@ -18,6 +18,7 @@ import Data.Ord (comparing)
 data Options = Options
     { dir1 :: FilePath
     , dir2 :: FilePath
+    , outputFile :: Maybe FilePath
     , skipEquals :: Bool
     }
 
@@ -31,6 +32,15 @@ argDir2 = Opts.argument Opts.str $
     Opts.help "Second directory"
     <> Opts.metavar "DIR-2"
 
+outputFileOption :: Opts.Parser (Maybe FilePath)
+outputFileOption = Opts.option (Just <$> Opts.str)
+    ( Opts.short 'o'
+    <> Opts.long "output-file"
+    <> Opts.help "Output file (prints to terminal/stdout if omitted)"
+    <> Opts.metavar "[FILE]"
+    <> Opts.value Nothing
+    )
+
 switchSkipEquals :: Opts.Parser Bool
 switchSkipEquals = Opts.switch $
     Opts.long "skip-equals"
@@ -38,7 +48,7 @@ switchSkipEquals = Opts.switch $
 
 baseOpts :: Opts.Parser Options
 baseOpts = Options
-    <$> argDir1 <*> argDir2 <*> switchSkipEquals
+    <$> argDir1 <*> argDir2 <*> outputFileOption <*> switchSkipEquals
 
 opts :: Opts.ParserInfo Options
 opts = Opts.info baseOpts $
@@ -52,9 +62,10 @@ subMain options = do
             , Print.plain = True
             , Print.skipEquals = skipEquals options
             }
+        outAction = maybe TL.putStrLn TL.writeFile (outputFile options)
     pairs <- pairTargets (dir1 options) (dir2 options)
     output <- prepareReport printOpts pairs
-    TL.putStrLn $ TL.toLazyText output
+    outAction $ TL.toLazyText output
 
 pairTargets :: FilePath -> FilePath -> IO [(FilePath, FilePath)]
 pairTargets dir1' dir2' = do
