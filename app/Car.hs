@@ -36,10 +36,7 @@ import Data.Int
 import Control.Monad (replicateM)
 import Control.Applicative (liftA2, liftA3)
 import Control.Selective (Validation(..))
-import Data.Char (toUpper)
-import Data.List (find)
-import System.Directory (getDirectoryContents, doesFileExist)
-import System.FilePath (splitFileName, (</>))
+import System.Directory (doesFileExist)
 
 import GHC.Generics (Generic)
 import Data.Portray (Portray)

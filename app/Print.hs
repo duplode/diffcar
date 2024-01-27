@@ -7,11 +7,8 @@ module Print
 
 import Car
 
-import qualified Options.Applicative as Opts
 import qualified Data.Text as T
-import qualified Data.Text.IO as T (putStrLn)
 import qualified Data.Text.Lazy as TL (toStrict)
-import Control.Monad (when, unless)
 import Data.Maybe (isNothing)
 import qualified Control.Selective as Sel
 import qualified Data.Portray.Diff as Portray
@@ -53,4 +50,3 @@ diffHeader path1 path2 =  T.unlines
     , T.pack path2
     , T.replicate 72 "-"
     ]
-
