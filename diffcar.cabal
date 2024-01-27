@@ -23,6 +23,7 @@ executable diffcar
                     , Car
                     , Single
                     , Print
+                    , Report
     -- other-extensions:
     build-depends:    base ^>=4.17.0.0
                     , containers

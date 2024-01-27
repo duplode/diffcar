@@ -1,6 +1,7 @@
 module Main where
 
 import qualified Single
+import qualified Report
 
 import qualified Options.Applicative as Opts
 import Control.Applicative
@@ -10,10 +11,13 @@ main = do
     fullOpts <- Opts.customExecParser p outerOpts
     case fullOpts of
         Single o -> Single.subMain o
+        Report o -> Report.subMain o
     where
     p = Opts.prefs (Opts.showHelpOnError <> Opts.showHelpOnEmpty)
 
-data Command = Single Single.Options
+data Command
+    = Single Single.Options
+    | Report Report.Options
 
 outerOpts :: Opts.ParserInfo Command
 outerOpts = Opts.info (commandOpts <**> Opts.helper <**> optVersion)
@@ -23,6 +27,7 @@ outerOpts = Opts.info (commandOpts <**> Opts.helper <**> optVersion)
     where
     commandOpts = Opts.hsubparser
         ( Opts.command "single" (Single <$> Single.opts)
+        <> Opts.command "report" (Report <$> Report.opts)
         )
     -- TODO: Get the version from cabal metatdata.
     optVersion = Opts.infoOption "diffcar 0.1"
