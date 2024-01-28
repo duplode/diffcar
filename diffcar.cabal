@@ -19,7 +19,8 @@ common warnings
 executable diffcar
     import:           warnings
     main-is:          OuterMain.hs
-    other-modules:    Resources
+    other-modules:    Paths_diffcar
+                    , Resources
                     , Car
                     , Single
                     , Print

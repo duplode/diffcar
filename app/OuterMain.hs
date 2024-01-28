@@ -5,6 +5,8 @@ import qualified Report
 
 import qualified Options.Applicative as Opts
 import Control.Applicative
+import Paths_diffcar (version)
+import Data.Version (showVersion)
 
 main :: IO ()
 main = do
@@ -29,6 +31,5 @@ outerOpts = Opts.info (commandOpts <**> Opts.helper <**> optVersion)
         ( Opts.command "single" (Single <$> Single.opts)
         <> Opts.command "report" (Report <$> Report.opts)
         )
-    -- TODO: Get the version from cabal metatdata.
-    optVersion = Opts.infoOption "diffcar 0.1"
+    optVersion = Opts.infoOption ("diffcar " ++ showVersion version)
         (Opts.long "version" <> Opts.help "Print version information")
