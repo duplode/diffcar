@@ -8,9 +8,11 @@ license-file:       LICENSE
 author:             Daniel Mlot
 maintainer:         duplode_1@yahoo.com.br
 copyright:          (c) 2023-2024 Daniel Mlot
+homepage:           https://github.com/duplode/diffcar
 category:           Game
 build-type:         Simple
--- extra-doc-files:    CHANGELOG.md
+extra-doc-files:    CHANGELOG.md
+                  , README.md
 -- extra-source-files:
 
 common warnings
