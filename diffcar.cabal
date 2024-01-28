@@ -1,13 +1,13 @@
 cabal-version:      3.0
 name:               diffcar
 version:            0.1.0.0
--- synopsis:
--- description:
+synopsis:           Take Stunts-aware diffs of CAR*.RES files.
+description:        Take Stunts-aware diffs of CAR*.RES files.
 license:            MIT
 license-file:       LICENSE
 author:             Daniel Mlot
 maintainer:         duplode_1@yahoo.com.br
--- copyright:
+copyright:          (c) 2023-2024 Daniel Mlot
 category:           Game
 build-type:         Simple
 -- extra-doc-files:    CHANGELOG.md
