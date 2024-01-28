@@ -13,6 +13,8 @@ import Data.Maybe (isNothing)
 import qualified Control.Selective as Sel
 import qualified Data.Portray.Diff as Portray
 import qualified Data.Portray.Prettyprinter as Portray
+import System.IO (stdout)
+import System.Console.ANSI (hNowSupportsANSI)
 
 data PrintOptions = PrintOptions
     { plain :: Bool
@@ -22,8 +24,9 @@ data PrintOptions = PrintOptions
 
 filesDiff :: PrintOptions -> FilePath -> FilePath -> IO T.Text
 filesDiff options path1 path2 = do
+    supportsPretty <- hNowSupportsANSI stdout
     let headerText = diffHeader path1 path2
-        chosenShow = if plain options
+        chosenShow = if plain options || not (supportsPretty)
             then Portray.basicShowPortrayal
             else TL.toStrict . Portray.prettyShowPortrayalLazy
     vCar1 <- readCar path1

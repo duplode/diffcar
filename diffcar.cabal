@@ -34,6 +34,7 @@ executable diffcar
                     , portray-diff
                     , portray-prettyprinter
                     , prettyprinter
+                    , ansi-terminal >= 1.0.2
                     , wrapped
                     , text
                     , optparse-applicative
