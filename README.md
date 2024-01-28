@@ -22,3 +22,6 @@ the fields can be found at the Stunts Wiki:
 - <https://wiki.stunts.hu/wiki/Car_files#Car_behaviour_.28car.2A.res.29>
 
 - <https://wiki.stunts.hu/wiki/Car_parameters>
+
+This project is developed by Daniel Mlot, also known as Duplode. The
+sources are available at <https://github.com/duplode/diffcar>.
